@@ -1,0 +1,9 @@
+.env
+mariadb
+mariadb-init
+web/html*
+web/moodledata
+web/behatdata
+web/behatfaildumps
+web/phpunitdata
+.vscode

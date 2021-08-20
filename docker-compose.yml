@@ -1,0 +1,227 @@
+version: "3"
+
+services:
+  webserver:
+    image: "moodlehq/moodle-php-apache:${MOODLE_DOCKER_PHP_VERSION}"
+    container_name: ${PROJECT_NAME}_webserver
+    depends_on:
+      - ${MOODLE_DOCKER_DB}
+    volumes:
+      - "./web:/var/www"
+      - "${ASSETDIR}/web/apache2_faildumps.conf:/etc/apache2/conf-enabled/apache2_faildumps.conf"
+      - "${ASSETDIR}/web/apache2_mailhog.conf:/etc/apache2/conf-enabled/apache2_mailhog.conf"
+      - "${ASSETDIR}/web/php-ini:/usr/local/etc/php/custom.d"
+    #  - "${ASSETDIR}/web/vhost.conf:/etc/apache2/sites-available/000-default.conf"
+    environment:
+      MOODLE_DOCKER_DBTYPE: ${MOODLE_DOCKER_DB}
+      MOODLE_DOCKER_DBHOST: ${DB_HOST}
+      MOODLE_DOCKER_DBNAME: ${DB_NAME}
+      MOODLE_DOCKER_DBUSER: ${DB_USER}
+      MOODLE_DOCKER_DBPASS: ${DB_PASSWORD}
+      MOODLE_DOCKER_BROWSER: firefox
+      MOODLE_DOCKER_DBCOLLATION: utf8mb4_bin
+      MOODLE_DOCKER_WEB_HOST: ${PROJECT_BASE_URL}
+      MOODLE_DOCKER_WEB_PORT: 8000
+      APACHE_DOCUMENT_ROOT: ${APACHE_DOCUMENT_ROOT}
+      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+      PHP_INI_SCAN_DIR: "/usr/local/etc/php/custom.d:/usr/local/etc/php/conf.d"
+    labels:
+    - "traefik.http.routers.${PROJECT_NAME}_webserver.rule=Host(`${PROJECT_BASE_URL}`)"
+
+  mariadb:
+    image: mariadb:$MARIADB_TAG
+    container_name: "${PROJECT_NAME}_mariadb"
+    stop_grace_period: 30s
+    command: >
+              --character-set-server=utf8mb4
+              --collation-server=utf8mb4_bin
+              --innodb_file_per_table=On
+              --innodb_buffer_pool_size=4096M
+              --innodb_log_file_size=2048M
+              --innodb_buffer_pool_instances=4
+              --thread_pool_size=8
+    environment:
+      MYSQL_ROOT_PASSWORD: $DB_ROOT_PASSWORD
+      MYSQL_DATABASE: $DB_NAME
+      MYSQL_USER: $DB_USER
+      MYSQL_PASSWORD: $DB_PASSWORD
+      MYSQL_CLIENT_DEFAULT_CHARACTER_SET: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+      MYSQL_INIT_CONNECT: SET NAMES utf8mb4
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_CHARACTER_SET_FILESYSTEM: binary
+      # MYSQL_INNODB_BUFFER_POOL_SIZE: 1024M
+    volumes:
+      - ./mariadb-init:/docker-entrypoint-initdb.d # Place init .sql file(s) here.
+      - ./mariadb/:/var/lib/mysql # Use bind mount
+    labels:
+      - "traefik.http.services.${PROJECT_NAME}_mariadb.loadbalancer.server.port=3306"
+      - "traefik.http.routers.${PROJECT_NAME}_mariadb.rule=Host(`mariadb.${PROJECT_BASE_URL}`)"
+
+#  php:
+#    image: wodby/drupal-php:$PHP_TAG
+#    container_name: "${PROJECT_NAME}_php"
+#    environment:
+#      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
+#      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S opensmtpd:25
+#      DB_HOST: $DB_HOST
+#      DB_PORT: $DB_PORT
+#      DB_USER: $DB_USER
+#      DB_PASSWORD: $DB_PASSWORD
+#      DB_NAME: $DB_NAME
+#      DB_DRIVER: $DB_DRIVER
+#      PHP_FPM_USER: wodby
+#      PHP_FPM_GROUP: wodby
+#      COLUMNS: 80 # Set 80 columns for docker exec -it.
+#      # Read instructions at https://wodby.com/docs/stacks/php/local/#xdebug
+#      PHP_XDEBUG: 1
+#      PHP_XDEBUG_DEFAULT_ENABLE: 1
+#      PHP_XDEBUG_REMOTE_CONNECT_BACK: 0
+#      PHP_IDE_CONFIG: serverName=my-ide
+#      PHP_XDEBUG_IDEKEY: "my-ide"
+#      PHP_XDEBUG_REMOTE_HOST: host.docker.internal # Docker 18.03+ Mac/Win
+#      PHP_XDEBUG_REMOTE_HOST: 172.17.0.1 # Linux
+#      PHP_XDEBUG_REMOTE_HOST: 10.254.254.254 # macOS, Docker < 18.03
+#      PHP_XDEBUG_REMOTE_HOST: 10.0.75.1 # Windows, Docker < 18.03
+#      PHP_XDEBUG_REMOTE_LOG: /tmp/php-xdebug.log
+#      # PHPUnit Drupal testing configurations
+#      SIMPLETEST_BASE_URL: "http://nginx"
+#      SIMPLETEST_DB: "${DB_DRIVER}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}#tests_"
+#      MINK_DRIVER_ARGS_WEBDRIVER: '["chrome", {"browserName":"chrome","goog:chromeOptions":{"args":["--disable-gpu","--headless"]}}, "http://chrome:9515"]'
+#    volumes:
+#    - ./:/var/www/html
+## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
+#    - mutagen:/var/www/html
+## For XHProf and Xdebug profiler traces
+#    - files:/mnt/files
+
+
+#  nginx:
+#    image: wodby/nginx:$NGINX_TAG
+#    container_name: "${PROJECT_NAME}_nginx"
+#    depends_on:
+#    - php
+#    environment:
+#      NGINX_STATIC_OPEN_FILE_CACHE: "off"
+#      NGINX_ERROR_LOG_LEVEL: debug
+#      NGINX_BACKEND_HOST: php
+#      NGINX_SERVER_ROOT: /var/www/html/web
+#      NGINX_VHOST_PRESET: $NGINX_VHOST_PRESET
+#    #      NGINX_DRUPAL_FILE_PROXY_URL: http://example.com
+#    volumes:
+#    - ./:/var/www/html
+## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
+#    - mutagen:/var/www/html
+#    labels:
+#    - "traefik.http.routers.${PROJECT_NAME}_nginx.rule=Host(`${PROJECT_BASE_URL}`)"
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: "${PROJECT_NAME}_mailhog"
+    labels:
+    - "traefik.http.services.${PROJECT_NAME}_mailhog.loadbalancer.server.port=8025"
+    - "traefik.http.routers.${PROJECT_NAME}_mailhog.rule=Host(`mailhog.${PROJECT_BASE_URL}`)"
+  
+  selenium:
+    image: "selenium/standalone-firefox${MOODLE_DOCKER_SELENIUM_SUFFIX}:2.53.1"
+    container_name: "${PROJECT_NAME}_selenium"
+    volumes:
+      - "./web/html:/var/www/html:ro"
+    ports:
+      - 5900:5900
+
+#  postgres:
+#    image: wodby/postgres:$POSTGRES_TAG
+#    container_name: "${PROJECT_NAME}_postgres"
+#    stop_grace_period: 30s
+#    environment:
+#      POSTGRES_PASSWORD: $DB_PASSWORD
+#      POSTGRES_DB: $DB_NAME
+#      POSTGRES_USER: $DB_USER
+#    volumes:
+#    - ./postgres-init:/docker-entrypoint-initdb.d # Place init file(s) here.
+#    - /path/to/postgres/data/on/host:/var/lib/postgresql/data # Use bind mount
+
+#  redis:
+#    container_name: "${PROJECT_NAME}_redis"
+#    image: wodby/redis:$REDIS_TAG
+
+#  adminer:
+#    container_name: "${PROJECT_NAME}_adminer"
+#    image: wodby/adminer:$ADMINER_TAG
+#    environment:
+#      # For PostgreSQL:
+#      #      ADMINER_DEFAULT_DB_DRIVER: pgsql
+#      ADMINER_DEFAULT_DB_HOST: $DB_HOST
+#      ADMINER_DEFAULT_DB_NAME: $DB_NAME
+#    labels:
+#    - "traefik.http.routers.${PROJECT_NAME}_adminer.rule=Host(`adminer.${PROJECT_BASE_URL}`)"
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: "${PROJECT_NAME}_pma"
+    environment:
+      PMA_HOST: $DB_HOST
+      PMA_USER: $DB_USER
+      PMA_PASSWORD: $DB_PASSWORD
+      UPLOAD_LIMIT: 1G
+    labels:
+      - "traefik.http.routers.${PROJECT_NAME}_pma.rule=Host(`pma.${PROJECT_BASE_URL}`)"
+
+#  solr:
+#    image: wodby/solr:$SOLR_TAG
+#    container_name: "${PROJECT_NAME}_solr"
+#    environment:
+#      SOLR_DEFAULT_CONFIG_SET: $SOLR_CONFIG_SET
+#      SOLR_HEAP: 1024m
+#    labels:
+#    - "traefik.http.services.${PROJECT_NAME}_solr.loadbalancer.server.port=8983"
+#    - "traefik.http.routers.${PROJECT_NAME}_solr.rule=Host(`solr.${PROJECT_BASE_URL}`)"
+
+
+#  memcached:
+#    container_name: "${PROJECT_NAME}_memcached"
+#    image: wodby/memcached:$MEMCACHED_TAG
+
+#  xhprof:
+#    image: wodby/xhprof:$XHPROF_TAG
+#    container_name: "${PROJECT_NAME}_xhprof"
+#    restart: always
+#    volumes:
+#    - files:/mnt/files
+#    labels:
+#    - "traefik.http.routers.${PROJECT_NAME}_xhprof.rule=Host(`xhprof.${PROJECT_BASE_URL}`)"
+
+  portainer:
+    image: portainer/portainer
+    container_name: "${PROJECT_NAME}_portainer"
+    command: --no-auth -H unix:///var/run/docker.sock
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+    - "traefik.http.routers.${PROJECT_NAME}_portainer.rule=Host(`portainer.${PROJECT_BASE_URL}`)"
+
+  traefik:
+    image: traefik:v2.0
+    container_name: "${PROJECT_NAME}_traefik"
+    command: --api.insecure=true --providers.docker
+    ports:
+    - '8000:80'
+    - '8080:8080' # Dashboard
+    - '33061:3306' # Database
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+#  mutagen:
+#    build:
+#      context: .
+#      dockerfile: mutagen/Dockerfile
+#    init: true
+#    container_name: "mutagen"
+#    volumes:
+#    - mutagen:/var/www/html
+
+#volumes:
+## For macOS users (Mutagen)
+#  mutagen:
+## For Xdebug profiler
+#  files:
