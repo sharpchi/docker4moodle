@@ -12,36 +12,23 @@ own_plugins() {
     fi
 
     git submodule add git@github.com:sharpchi/moodle-tool_modedit.git admin/tool/modedit
-    git submodule add git@github.com:chiuni/tool_rollover.git admin/tool/rollover
 
     git submodule add git@github.com:sharpchi/moodle-block_coursesearch.git blocks/coursesearch
-    git submodule add git@github.com:chiuni/moodle-block_intranetnews.git blocks/intranetnews
     git submodule add git@github.com:sharpchi/moodle-block_libanswers.git blocks/libanswers
-    git submodule add git@github.com:chiuni/moodle-block_minimumstandards.git blocks/minimumstandards
-
-    git submodule add git@github.com:chiuni/moodle-enrol_sits.git enrol/sits
 
     git submodule add git@github.com:sharpchi/moodle-filter_syntaxhighlighter.git filter/syntaxhighlighter
-    git submodule add git@github.com:chiuni/moodle-filter_thefeed.git filter/thefeed
 
     git submodule add git@github.com:sharpchi/moodle-atto_linkadv.git lib/editor/atto/plugins/linkadv
     git submodule add git@github.com:sharpchi/moodle-atto_templates4u.git lib/editor/atto/plugins/templates4u
 
     git submodule add git@github.com:sharpchi/moodle-local_accessibilitytool.git local/accessibilitytool
     git submodule add git@github.com:sharpchi/moodle-adminsettingsconfig.git local/adminsettingsconfig
-    git submodule add git@github.com:chiuni/moodle-local_chi.git local/chi
-    git submodule add git@github.com:chiuni/moodle-local_communications.git local/communications
     git submodule add git@github.com:sharpchi/moodle-local_enrolmentwatcher.git local/enrolmentwatcher
-    git submodule add git@github.com:chiuni/moodle-local_placeholders.git local/placeholders
 
     git submodule add git@github.com:sharpchi/moodle-mod_evalutation.git mod/evaluation
-    git submodule add git@github.com:chiuni/moodle-mod_handbook.git mod/handbook
 
     git submodule add git@github.com:chiuni/moodle-report_interlibraryloans.git report/interlibraryloans
-    git submodule add git@github.com:chiuni/moodle-report_stickers.git report/stickers
-    git submodule add git@github.com:chiuni/moodle-report_servermonitor.git report/servermonitor
 
-    git submodule add git@github.com:chiuni/moodle-theme_chi.git theme/chi
 }
 third_plugins () {
     cd ${HTML_PATH}
