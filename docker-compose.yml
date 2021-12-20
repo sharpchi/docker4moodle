@@ -19,7 +19,7 @@ services:
       MOODLE_DOCKER_DBUSER: ${DB_USER}
       MOODLE_DOCKER_DBPASS: ${DB_PASSWORD}
       MOODLE_DOCKER_BROWSER: firefox
-      MOODLE_DOCKER_DBCOLLATION: utf8mb4_bin
+      MOODLE_DOCKER_DBCOLLATION: utf8mb4_unicode_ci
       MOODLE_DOCKER_WEB_HOST: ${PROJECT_BASE_URL}
       MOODLE_DOCKER_WEB_PORT: 8000
       APACHE_DOCUMENT_ROOT: ${APACHE_DOCUMENT_ROOT}
@@ -34,7 +34,7 @@ services:
     stop_grace_period: 30s
     command: >
               --character-set-server=utf8mb4
-              --collation-server=utf8mb4_bin
+              --collation-server=utf8mb4_unicode_ci
               --innodb_file_per_table=On
               --innodb_buffer_pool_size=4096M
               --innodb_log_file_size=2048M
