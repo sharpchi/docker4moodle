@@ -12,3 +12,4 @@ mkdir "${WEB_PATH}/behatfaildumps"
 chmod 777 "${WEB_PATH}/behatfaildumps"
 mkdir mariadb
 mkdir mariadb-init
+mkdir diffs

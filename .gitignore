@@ -8,3 +8,5 @@ web/behatfaildumps
 web/phpunitdata
 .vscode
 bin/moodleextra/*
+/vendor/
+diffs

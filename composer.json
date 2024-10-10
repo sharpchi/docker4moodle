@@ -1,0 +1,14 @@
+{
+    "name": "sharpm/sol40dev",
+    "require-dev": {
+        "wapmorgan/php-deprecation-detector": "^2.0",
+        "phpcompatibility/php-compatibility": "*"
+    },
+    "authors": [
+        {
+            "name": "Mark Sharp",
+            "email": "mark.sharp@solent.ac.uk"
+        }
+    ],
+    "require": {}
+}

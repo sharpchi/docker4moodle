@@ -8,9 +8,11 @@ services:
       - ${MOODLE_DOCKER_DB}
     volumes:
       - "./web:/var/www"
-      - "${ASSETDIR}/web/apache2_faildumps.conf:/etc/apache2/conf-enabled/apache2_faildumps.conf"
-      - "${ASSETDIR}/web/apache2_mailhog.conf:/etc/apache2/conf-enabled/apache2_mailhog.conf"
-      - "${ASSETDIR}/web/php-ini:/usr/local/etc/php/custom.d"
+      - "${ASSETDIR}/web/apache2/apache2_faildumps.conf:/etc/apache2/conf-enabled/apache2_faildumps.conf"
+      - "${ASSETDIR}/web/apache2/apache2_mailhog.conf:/etc/apache2/conf-enabled/apache2_mailhog.conf"
+      - "${ASSETDIR}/web/apache2/apache2_conf.conf:/etc/apache2/conf-enabled/apache2_conf.conf"
+      - "${ASSETDIR}/web/php-ini/apache2_php.ini:/usr/local/etc/apache2/custom.d/apache2_php.ini"
+      # - "${ASSETDIR}/web/apache2:/usr/local/etc/apache2/custom.d"
     #  - "${ASSETDIR}/web/vhost.conf:/etc/apache2/sites-available/000-default.conf"
     environment:
       MOODLE_DOCKER_DBTYPE: ${MOODLE_DOCKER_DB}
@@ -19,14 +21,36 @@ services:
       MOODLE_DOCKER_DBUSER: ${DB_USER}
       MOODLE_DOCKER_DBPASS: ${DB_PASSWORD}
       MOODLE_DOCKER_BROWSER: firefox
+      #MOODLE_DOCKER_BROWSER: chrome
       MOODLE_DOCKER_DBCOLLATION: utf8mb4_unicode_ci
       MOODLE_DOCKER_WEB_HOST: ${PROJECT_BASE_URL}
       MOODLE_DOCKER_WEB_PORT: 8000
       APACHE_DOCUMENT_ROOT: ${APACHE_DOCUMENT_ROOT}
       PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
       PHP_INI_SCAN_DIR: "/usr/local/etc/php/custom.d:/usr/local/etc/php/conf.d"
+      PHP_XDEBUG: 1
+      PHP_XDEBUG_DEFAULT_ENABLE: 1
+      PHP_XDEBUG_MODE: coverage
+      PHP_IDE_CONFIG: serverName=my-ide
+      PHP_XDEBUG_REMOTE_HOST: 172.17.0.1
+      PHP_XDEBUG_CLIENT_HOST: host.docker.internal
+      PHP_EXTENSION_xdebug: 1
     labels:
     - "traefik.http.routers.${PROJECT_NAME}_webserver.rule=Host(`${PROJECT_BASE_URL}`)"
+
+  # The admin instance is responsible for triggering the cron task periodically.
+  # In this compose setup we use a periodic curl command to the web container
+  # to keep this simple. In a real deployment environment there may be better
+  # tools for triggering scheduled tasks.
+  # moodle-cron:
+  #   image: jsonfry/curl-cron
+  #   container_name: ${PROJECT_NAME}_cron
+  #   environment:
+  #     - MAHARA_URL_SECRET
+  #     - CRON_SCHEDULE=* * * * *
+  #     - OPTIONS=http://${PROJECT_BASE_URL}/admin/cron.php?password=secretcron
+    # labels:
+    #   - "traefik.http.routers.${PROJECT_NAME}_cron.rule=Host(`cron.${PROJECT_BASE_URL}`)"
 
   mariadb:
     image: mariadb:$MARIADB_TAG
@@ -58,104 +82,27 @@ services:
       - "traefik.http.services.${PROJECT_NAME}_mariadb.loadbalancer.server.port=3306"
       - "traefik.http.routers.${PROJECT_NAME}_mariadb.rule=Host(`mariadb.${PROJECT_BASE_URL}`)"
 
-#  php:
-#    image: wodby/drupal-php:$PHP_TAG
-#    container_name: "${PROJECT_NAME}_php"
-#    environment:
-#      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
-#      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S opensmtpd:25
-#      DB_HOST: $DB_HOST
-#      DB_PORT: $DB_PORT
-#      DB_USER: $DB_USER
-#      DB_PASSWORD: $DB_PASSWORD
-#      DB_NAME: $DB_NAME
-#      DB_DRIVER: $DB_DRIVER
-#      PHP_FPM_USER: wodby
-#      PHP_FPM_GROUP: wodby
-#      COLUMNS: 80 # Set 80 columns for docker exec -it.
-#      # Read instructions at https://wodby.com/docs/stacks/php/local/#xdebug
-#      PHP_XDEBUG: 1
-#      PHP_XDEBUG_DEFAULT_ENABLE: 1
-#      PHP_XDEBUG_REMOTE_CONNECT_BACK: 0
-#      PHP_IDE_CONFIG: serverName=my-ide
-#      PHP_XDEBUG_IDEKEY: "my-ide"
-#      PHP_XDEBUG_REMOTE_HOST: host.docker.internal # Docker 18.03+ Mac/Win
-#      PHP_XDEBUG_REMOTE_HOST: 172.17.0.1 # Linux
-#      PHP_XDEBUG_REMOTE_HOST: 10.254.254.254 # macOS, Docker < 18.03
-#      PHP_XDEBUG_REMOTE_HOST: 10.0.75.1 # Windows, Docker < 18.03
-#      PHP_XDEBUG_REMOTE_LOG: /tmp/php-xdebug.log
-#      # PHPUnit Drupal testing configurations
-#      SIMPLETEST_BASE_URL: "http://nginx"
-#      SIMPLETEST_DB: "${DB_DRIVER}://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}#tests_"
-#      MINK_DRIVER_ARGS_WEBDRIVER: '["chrome", {"browserName":"chrome","goog:chromeOptions":{"args":["--disable-gpu","--headless"]}}, "http://chrome:9515"]'
-#    volumes:
-#    - ./:/var/www/html
-## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
-#    - mutagen:/var/www/html
-## For XHProf and Xdebug profiler traces
-#    - files:/mnt/files
-
-
-#  nginx:
-#    image: wodby/nginx:$NGINX_TAG
-#    container_name: "${PROJECT_NAME}_nginx"
-#    depends_on:
-#    - php
-#    environment:
-#      NGINX_STATIC_OPEN_FILE_CACHE: "off"
-#      NGINX_ERROR_LOG_LEVEL: debug
-#      NGINX_BACKEND_HOST: php
-#      NGINX_SERVER_ROOT: /var/www/html/web
-#      NGINX_VHOST_PRESET: $NGINX_VHOST_PRESET
-#    #      NGINX_DRUPAL_FILE_PROXY_URL: http://example.com
-#    volumes:
-#    - ./:/var/www/html
-## Alternative for macOS users: Mutagen https://wodby.com/docs/stacks/drupal/local#docker-for-mac
-#    - mutagen:/var/www/html
-#    labels:
-#    - "traefik.http.routers.${PROJECT_NAME}_nginx.rule=Host(`${PROJECT_BASE_URL}`)"
-
   mailhog:
     image: mailhog/mailhog
     container_name: "${PROJECT_NAME}_mailhog"
     labels:
     - "traefik.http.services.${PROJECT_NAME}_mailhog.loadbalancer.server.port=8025"
     - "traefik.http.routers.${PROJECT_NAME}_mailhog.rule=Host(`mailhog.${PROJECT_BASE_URL}`)"
-  
+
   selenium:
-    image: "selenium/standalone-firefox${MOODLE_DOCKER_SELENIUM_SUFFIX}:2.53.1"
+    image: "selenium/standalone-firefox${MOODLE_DOCKER_SELENIUM_SUFFIX}:${MOODLE_DOCKER_BROWSER_TAG}"
+    #image: "selenium/standalone-firefox:latest"
+    #image: "selenium/standalone-chrome:latest"
     container_name: "${PROJECT_NAME}_selenium"
     volumes:
-      - "./web/html:/var/www/html:ro"
+      - "./web/html:/var/www/html"
     ports:
       - 5900:5900
-
-#  postgres:
-#    image: wodby/postgres:$POSTGRES_TAG
-#    container_name: "${PROJECT_NAME}_postgres"
-#    stop_grace_period: 30s
-#    environment:
-#      POSTGRES_PASSWORD: $DB_PASSWORD
-#      POSTGRES_DB: $DB_NAME
-#      POSTGRES_USER: $DB_USER
-#    volumes:
-#    - ./postgres-init:/docker-entrypoint-initdb.d # Place init file(s) here.
-#    - /path/to/postgres/data/on/host:/var/lib/postgresql/data # Use bind mount
+      - 4444:4444
 
 #  redis:
 #    container_name: "${PROJECT_NAME}_redis"
 #    image: wodby/redis:$REDIS_TAG
-
-#  adminer:
-#    container_name: "${PROJECT_NAME}_adminer"
-#    image: wodby/adminer:$ADMINER_TAG
-#    environment:
-#      # For PostgreSQL:
-#      #      ADMINER_DEFAULT_DB_DRIVER: pgsql
-#      ADMINER_DEFAULT_DB_HOST: $DB_HOST
-#      ADMINER_DEFAULT_DB_NAME: $DB_NAME
-#    labels:
-#    - "traefik.http.routers.${PROJECT_NAME}_adminer.rule=Host(`adminer.${PROJECT_BASE_URL}`)"
 
   pma:
     image: phpmyadmin/phpmyadmin
@@ -179,10 +126,6 @@ services:
 #    - "traefik.http.routers.${PROJECT_NAME}_solr.rule=Host(`solr.${PROJECT_BASE_URL}`)"
 
 
-#  memcached:
-#    container_name: "${PROJECT_NAME}_memcached"
-#    image: wodby/memcached:$MEMCACHED_TAG
-
 #  xhprof:
 #    image: wodby/xhprof:$XHPROF_TAG
 #    container_name: "${PROJECT_NAME}_xhprof"
@@ -191,15 +134,6 @@ services:
 #    - files:/mnt/files
 #    labels:
 #    - "traefik.http.routers.${PROJECT_NAME}_xhprof.rule=Host(`xhprof.${PROJECT_BASE_URL}`)"
-
-  portainer:
-    image: portainer/portainer
-    container_name: "${PROJECT_NAME}_portainer"
-    command: --no-auth -H unix:///var/run/docker.sock
-    volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    labels:
-    - "traefik.http.routers.${PROJECT_NAME}_portainer.rule=Host(`portainer.${PROJECT_BASE_URL}`)"
 
   traefik:
     image: traefik:v2.0
@@ -211,17 +145,8 @@ services:
     - '33061:3306' # Database
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-#  mutagen:
-#    build:
-#      context: .
-#      dockerfile: mutagen/Dockerfile
-#    init: true
-#    container_name: "mutagen"
-#    volumes:
-#    - mutagen:/var/www/html
+
 
 #volumes:
-## For macOS users (Mutagen)
-#  mutagen:
 ## For Xdebug profiler
 #  files:

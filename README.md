@@ -62,3 +62,26 @@ The basic workflow is to:
 - add any plugins you want test/develop
 - start up docker
 - install Moodle
+
+## Phan
+
+Static analysis tools
+
+* https://www.php.net/manual/en/appendices.php PHP Deprecations
+* https://github.com/phan/phan/wiki/Getting-Started#creating-a-config-file
+* https://odan.github.io/2020/12/22/php8-compatibility-check.html
+* https://github.com/phan/phan/wiki/Tutorial-for-Analyzing-a-Large-Sloppy-Code-Base
+
+## PHPDD
+
+I've included PHP Deprecation Detector in the composer file. Install this to use.
+
+```
+// Checks that the whole html folder is compatible after PHP 7.4 to PHP 8.0 and outputs to php80.txt file.
+// This excludes some development folders and 3rd party library folders that we have no control over, but if you
+// want to do a full-full scan remove the exclude list.
+./vendor/bin/phpdd scan -t 8.0 -a 7.4 -e codechecker,moodlecheck,node_modules,vendor web/html/ > phpdd.txt
+
+// You can change the path to check individual plugins e.g.
+./vendor/bin/phpdd scan -t 8.0 -a 7.4 web/html/blocks/checklist
+```
