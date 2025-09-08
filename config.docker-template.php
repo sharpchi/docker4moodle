@@ -33,7 +33,7 @@ $CFG->directorypermissions = 0777;
 $CFG->smtphosts = 'mailhog:1025';
 
 // Debug options - possible to be controlled by flag in future..
-$CFG->debug = (E_ALL | E_STRICT); // DEBUG_DEVELOPER
+$CFG->debug = (E_ALL); // DEBUG_DEVELOPER
 $CFG->debugdisplay = 1;
 $CFG->debugstringids = 1; // Add strings=1 to url to get string ids.
 $CFG->perfdebug = 15;
@@ -46,6 +46,7 @@ $CFG->pathtophp = '/usr/local/bin/php';
 $CFG->phpunit_dataroot  = '/var/www/phpunitdata';
 $CFG->phpunit_prefix = 't_';
 define('TEST_EXTERNAL_FILES_HTTP_URL', 'http://exttests');
+define('TEST_EXTERNAL_FILES_HTTPS_URL', 'http://exttests:9000');
 
 $CFG->behat_wwwroot   = 'http://webserver';
 $CFG->behat_dataroot  = '/var/www/behatdata';
@@ -57,6 +58,7 @@ $CFG->behat_profiles = array(
     ),
 );
 $CFG->behat_faildump_path = '/var/www/behatfaildumps';
+$CFG->behat_increasetimeout = getenv('MOODLE_DOCKER_TIMEOUT_FACTOR');
 
 define('PHPUNIT_LONGTEST', true);
 

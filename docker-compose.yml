@@ -25,6 +25,7 @@ services:
       MOODLE_DOCKER_DBCOLLATION: utf8mb4_unicode_ci
       MOODLE_DOCKER_WEB_HOST: ${PROJECT_BASE_URL}
       MOODLE_DOCKER_WEB_PORT: 8008
+      MOODLE_DOCKER_PHPUNIT_EXTRAS: "true"
       APACHE_DOCUMENT_ROOT: ${APACHE_DOCUMENT_ROOT}
       PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
       PHP_INI_SCAN_DIR: "/usr/local/etc/php/custom.d:/usr/local/etc/php/conf.d"
@@ -99,7 +100,27 @@ services:
     ports:
       - 5900:5900
       - 4444:4444
-
+  exttests:
+    image: moodlehq/moodle-exttests
+    volumes:
+      - "${ASSETDIR}/exttests/apache2_ports.conf:/etc/apache2/ports.conf"
+      - "${ASSETDIR}/exttests/apache2.conf:/etc/apache2/sites-enabled/000-default.conf"
+  memcached0:
+    image: memcached:1.4
+  memcached1:
+    image: memcached:1.4
+  mongo:
+    image: mongo:4.0
+  redis:
+    image: redis:5
+  solr:
+    image: solr:6.5
+    entrypoint:
+      - docker-entrypoint.sh
+      - solr-precreate
+      - test
+  ldap:
+    image: larrycai/openldap
 #  redis:
 #    container_name: "${PROJECT_NAME}_redis"
 #    image: wodby/redis:$REDIS_TAG
