@@ -10,10 +10,15 @@ services:
       - "./web:/var/www"
       - "${ASSETDIR}/web/apache2/apache2_faildumps.conf:/etc/apache2/conf-enabled/apache2_faildumps.conf"
       - "${ASSETDIR}/web/apache2/apache2_mailhog.conf:/etc/apache2/conf-enabled/apache2_mailhog.conf"
-      - "${ASSETDIR}/web/apache2/apache2_conf.conf:/etc/apache2/conf-enabled/apache2_conf.conf"
-      - "${ASSETDIR}/web/php-ini/apache2_php.ini:/usr/local/etc/apache2/custom.d/apache2_php.ini"
+        #- "${ASSETDIR}/web/apache2/apache2_conf.conf:/etc/apache2/conf-enabled/apache2_conf.conf"
+        #- "./assets/web/php-ini/apache2_php.ini:/usr/local/etc/apache2/custom.d/apache2_php.ini"
+      - "${ASSETDIR}/web/php-ini/apache2_php.ini:/usr/local/etc/php/conf.d/10-docker-php-moodle.ini"
       # - "${ASSETDIR}/web/apache2:/usr/local/etc/apache2/custom.d"
     #  - "${ASSETDIR}/web/vhost.conf:/etc/apache2/sites-available/000-default.conf"
+    # networks:
+    #   - shared_sol405_sqlrs
+    # #   - lrsql_default
+    #   - sol405_default
     environment:
       MOODLE_DOCKER_DBTYPE: ${MOODLE_DOCKER_DB}
       MOODLE_DOCKER_DBHOST: ${DB_HOST}
@@ -28,7 +33,8 @@ services:
       MOODLE_DOCKER_PHPUNIT_EXTRAS: "true"
       APACHE_DOCUMENT_ROOT: ${APACHE_DOCUMENT_ROOT}
       PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
-      PHP_INI_SCAN_DIR: "/usr/local/etc/php/custom.d:/usr/local/etc/php/conf.d"
+      # PHP_INI_SCAN_DIR: "./assets/web/php-ini:/usr/local/etc/php/conf.d"
+      PHP_MEMORY_LIMIT: 1024M
       PHP_XDEBUG: 1
       PHP_XDEBUG_DEFAULT_ENABLE: 1
       PHP_XDEBUG_MODE: coverage
@@ -171,3 +177,8 @@ services:
 #volumes:
 ## For Xdebug profiler
 #  files:
+# networks:
+#   shared_sol405_sqlrs:
+#     external: true
+#   sol405_default:
+#     external: true
